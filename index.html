@@ -1,39 +1,191 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VeryGoodReads</title>
+  <title>Book Lovers – Login/Register</title>
+  <style>
+    /* General page styles */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      background: #ffcc00;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* Profile page gradient */
+    #profile {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+      background: linear-gradient(120deg, #00c853, #b9f6ca);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 50px;
+      color: white;
+    }
+
+    #search-bar {
+      width: 80%;
+      max-width: 500px;
+      padding: 10px;
+      font-size: 18px;
+      border-radius: 5px;
+      border: none;
+      margin-bottom: 20px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      width: 80%;
+      max-width: 600px;
+    }
+
+    li {
+      background: rgba(0,0,0,0.2);
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-  <img alt="Notepad Flipping Pages Showcasing Turning Motion Paper Often Symbolizing Ideas — Stock Video" src="https://st5.depositphotos.com/2865871/74780/v/600/depositphotos_747806822-stock-video-notepad-flipping-pages-showcasing-turning.jpg?forcejpeg=true">
 
-  <h2>Featured Books</h2>
-  <ul id="book-list">
-    <li>
-      <strong>The Maze Runner</strong> by James Dashner
-      <button onclick="addFavorite('The Maze Runner')">⭐ Add to Favorites</button>
-    </li>
-    <li>
-      <strong>Skyward</strong> by Brandon Sanderson
-      <button onclick="addFavorite('Skyward')">⭐ Add to Favorites</button>
-    </li>
-  </ul>
+  <!-- Login/Register Page -->
+  <div id="auth">
+    <h1>📚 Book Lovers</h1>
+    <div id="register">
+      <h2>Register</h2>
+      <input type="text" id="reg-username" placeholder="Username"><br>
+      <input type="password" id="reg-password" placeholder="Password"><br>
+      <button onclick="register()">Register</button>
+      <p>Already have an account? <span style="color: #ffcc00; cursor:pointer;" onclick="showLogin()">Login</span></p>
+    </div>
 
-  <h2>My Favorites</h2>
-  <ul id="favorites">
-    <!-- Favorite books will appear here -->
-  </ul>
+    <div id="login" style="display:none;">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username"><br>
+      <input type="password" id="login-password" placeholder="Password"><br>
+      <button onclick="login()">Login</button>
+      <p>No account? <span style="color: #ffcc00; cursor:pointer;" onclick="showRegister()">Register</span></p>
+    </div>
+  </div>
+
+  <!-- Profile Page -->
+  <div id="profile">
+    <h1 id="welcome"></h1>
+    <input type="text" id="search-bar" placeholder="Search books: [title]-[author]" onkeydown="if(event.key==='Enter'){searchBooks()}">
+    <ul id="search-results"></ul>
+    <button onclick="logout()">Logout</button>
+  </div>
 
   <script>
+    // Show login/register
+    function showLogin() {
+      document.getElementById("login").style.display = "block";
+      document.getElementById("register").style.display = "none";
+    }
+    function showRegister() {
+      document.getElementById("register").style.display = "block";
+      document.getElementById("login").style.display = "none";
+    }
+
+    // Register
+    function register() {
+      const username = document.getElementById("reg-username").value;
+      const password = document.getElementById("reg-password").value;
+      if(!username || !password){ alert("Enter username & password"); return;}
+      if(localStorage.getItem("user_"+username)){ alert("Username exists!"); return;}
+      localStorage.setItem("user_"+username, password);
+      alert("Registered! Login now.");
+      showLogin();
+    }
+
+    // Login
+    function login() {
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+      const saved = localStorage.getItem("user_"+username);
+      if(saved && saved===password){
+        localStorage.setItem("currentUser", username);
+        showProfile();
+      } else { alert("Invalid username or password"); }
+    }
+
+    // Show profile page
+    function showProfile() {
+      document.getElementById("auth").style.display="none";
+      document.getElementById("profile").style.display="flex";
+      const user = localStorage.getItem("currentUser");
+      document.getElementById("welcome").textContent="Welcome, "+user+"!";
+      loadFavorites();
+    }
+
+    // Logout
+    function logout(){
+      localStorage.removeItem("currentUser");
+      window.location.reload();
+    }
+
+    // Favorites (optional for search)
     const favorites = [];
-    function addFavorite(book) {
-      if (!favorites.includes(book)) {
-        favorites.push(book);
-        const favList = document.getElementById("favorites");
+    function loadFavorites(){
+      const user = localStorage.getItem("currentUser");
+      const saved = JSON.parse(localStorage.getItem("favorites_"+user)||"[]");
+      saved.forEach(book=>favorites.push(book));
+    }
+
+    // Example books array
+    const books = [
+      {title:"The Maze Runner", author:"James Dashner"},
+      {title:"Skyward", author:"Brandon Sanderson"},
+      {title:"Percy Jackson", author:"Rick Riordan"},
+      {title:"The Hunger Games", author:"Suzanne Collins"}
+    ];
+
+    // Search function
+    function searchBooks(){
+      const query = document.getElementById("search-bar").value.trim().toLowerCase();
+      const results = books.filter(b=>{
+        const check = (b.title+"-"+b.author).toLowerCase();
+        return check.includes(query);
+      });
+      const ul = document.getElementById("search-results");
+      ul.innerHTML="";
+      if(results.length===0){ ul.innerHTML="<li>No results found</li>"; return;}
+      results.forEach(b=>{
         const li = document.createElement("li");
-        li.textContent = book;
-        favList.appendChild(li);
-      }
+        li.textContent = b.title + " by " + b.author;
+        ul.appendChild(li);
+      });
+    }
+
+    // Auto-login
+    window.onload=()=>{
+      const currentUser = localStorage.getItem("currentUser");
+      if(currentUser) showProfile();
     }
   </script>
+
 </body>
 </html>
