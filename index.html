@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VeryGoodReads</title>
+</head>
+<body>
+  <img class="lnXdpd" alt="Freestyle skiing 2026" height="200" src="/logos/doodles/2026/freestyle-skiing-2026-feb-21-o-6753651837111058-law.gif" title="Freestyle skiing 2026" width="500" id="hplogo" data-csiid="vWyZafaULfup2roP86brYQ_2" data-atf="1">
+
+  <h2>Featured Books</h2>
+  <ul id="book-list">
+    <li>
+      <strong>The Maze Runner</strong> by James Dashner
+      <button onclick="addFavorite('The Maze Runner')">⭐ Add to Favorites</button>
+    </li>
+    <li>
+      <strong>Skyward</strong> by Brandon Sanderson
+      <button onclick="addFavorite('Skyward')">⭐ Add to Favorites</button>
+    </li>
+  </ul>
+
+  <h2>My Favorites</h2>
+  <ul id="favorites">
+    <!-- Favorite books will appear here -->
+  </ul>
+
+  <script>
+    const favorites = [];
+    function addFavorite(book) {
+      if (!favorites.includes(book)) {
+        favorites.push(book);
+        const favList = document.getElementById("favorites");
+        const li = document.createElement("li");
+        li.textContent = book;
+        favList.appendChild(li);
+      }
+    }
+  </script>
+</body>
+</html>
