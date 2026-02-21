@@ -1,18 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Book Lovers – Search Books</title>
+  <title>Book Lovers – Login/Register</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       min-height: 100vh;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      background: #ffcc00;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #profile {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+      background: linear-gradient(120deg, #00c853, #b9f6ca);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      text-align: center;
-      background: linear-gradient(120deg, #00c853, #b9f6ca);
       padding-top: 50px;
       color: white;
     }
@@ -45,20 +69,117 @@
     a {
       color: #ffeb3b;
     }
+
+    .fav-btn {
+      background: #ff9800;
+      margin-top: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-  <h1>📚 Book Lovers</h1>
-  <input type="text" id="search-bar" placeholder="Search books: [title]-[author]" onkeydown="if(event.key==='Enter'){searchBooks()}">
-  <ul id="search-results"></ul>
+  <!-- Auth Page -->
+  <div id="auth">
+    <h1>📚 Book Lovers</h1>
+    <div id="register">
+      <h2>Register</h2>
+      <input type="text" id="reg-username" placeholder="Username"><br>
+      <input type="password" id="reg-password" placeholder="Password"><br>
+      <button onclick="register()">Register</button>
+      <p>Already have an account? <span style="color: #ffcc00; cursor:pointer;" onclick="showLogin()">Login</span></p>
+    </div>
+
+    <div id="login" style="display:none;">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username"><br>
+      <input type="password" id="login-password" placeholder="Password"><br>
+      <button onclick="login()">Login</button>
+      <p>No account? <span style="color: #ffcc00; cursor:pointer;" onclick="showRegister()">Register</span></p>
+    </div>
+  </div>
+
+  <!-- Profile Page -->
+  <div id="profile">
+    <h1 id="welcome"></h1>
+    <input type="text" id="search-bar" placeholder="Search books: [title]-[author]" onkeydown="if(event.key==='Enter'){searchBooks()}">
+    <ul id="search-results"></ul>
+
+    <h2>My Favorites</h2>
+    <ul id="favorites"></ul>
+    <button onclick="logout()">Logout</button>
+  </div>
 
   <script>
+    // Show login/register forms
+    function showLogin() {
+      document.getElementById("login").style.display = "block";
+      document.getElementById("register").style.display = "none";
+    }
+    function showRegister() {
+      document.getElementById("register").style.display = "block";
+      document.getElementById("login").style.display = "none";
+    }
+
+    // Register
+    function register() {
+      const username = document.getElementById("reg-username").value;
+      const password = document.getElementById("reg-password").value;
+      if(!username || !password){ alert("Enter username & password"); return;}
+      if(localStorage.getItem("user_"+username)){ alert("Username exists!"); return;}
+      localStorage.setItem("user_"+username, password);
+      alert("Registered! Login now.");
+      showLogin();
+    }
+
+    // Login
+    function login() {
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+      const saved = localStorage.getItem("user_"+username);
+      if(saved && saved===password){
+        localStorage.setItem("currentUser", username);
+        showProfile();
+      } else { alert("Invalid username or password"); }
+    }
+
+    // Show profile page
+    const favorites = [];
+    function showProfile() {
+      document.getElementById("auth").style.display="none";
+      document.getElementById("profile").style.display="flex";
+      const user = localStorage.getItem("currentUser");
+      document.getElementById("welcome").textContent="Welcome, "+user+"!";
+      loadFavorites();
+    }
+
+    function logout(){
+      localStorage.removeItem("currentUser");
+      window.location.reload();
+    }
+
+    function loadFavorites(){
+      const user = localStorage.getItem("currentUser");
+      const saved = JSON.parse(localStorage.getItem("favorites_"+user)||"[]");
+      saved.forEach(book=>favorites.push(book));
+      updateFavorites();
+    }
+
+    function updateFavorites(){
+      const ul = document.getElementById("favorites");
+      ul.innerHTML = "";
+      favorites.forEach(book=>{
+        const li = document.createElement("li");
+        li.textContent = book;
+        ul.appendChild(li);
+      });
+    }
+
+    // Search using Open Library API
     async function searchBooks() {
       const query = document.getElementById("search-bar").value.trim();
       if(!query) return;
 
-      // Split by dash
       const parts = query.split("-");
       const title = parts[0] ? parts[0].trim() : "";
       const author = parts[1] ? parts[1].trim() : "";
@@ -67,15 +188,11 @@
       ul.innerHTML = "<li>Searching...</li>";
 
       try {
-        // Open Library Search API
         const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}&limit=5`);
         const data = await res.json();
 
         ul.innerHTML = "";
-        if(data.docs.length === 0) {
-          ul.innerHTML = "<li>No results found</li>";
-          return;
-        }
+        if(data.docs.length === 0){ ul.innerHTML = "<li>No results found</li>"; return; }
 
         data.docs.forEach(book => {
           const li = document.createElement("li");
@@ -85,15 +202,31 @@
           const goodreadsLink = `https://www.goodreads.com/search?q=${encodeURIComponent(bookTitle + " " + bookAuthor)}`;
 
           li.innerHTML = `<strong>${bookTitle}</strong> by ${bookAuthor} (${publishYear})<br>
-                          <a href="${goodreadsLink}" target="_blank">Read on Goodreads</a>`;
+                          <a href="${goodreadsLink}" target="_blank">Read on Goodreads</a><br>
+                          <button class="fav-btn" onclick="addFavorite('${bookTitle} by ${bookAuthor}')">⭐ Add to Favorites</button>`;
           ul.appendChild(li);
         });
-      } catch(e) {
-        ul.innerHTML = "<li>Error fetching book data</li>";
+      } catch(e){
+        ul.innerHTML="<li>Error fetching book data</li>";
         console.error(e);
       }
     }
-  </script>
 
+    function addFavorite(book){
+      if(!favorites.includes(book)){
+        favorites.push(book);
+        const user = localStorage.getItem("currentUser");
+        localStorage.setItem("favorites_"+user, JSON.stringify(favorites));
+        updateFavorites();
+      }
+    }
+
+    // Auto-login if already logged in
+    window.onload=()=>{
+      const currentUser = localStorage.getItem("currentUser");
+      if(currentUser) showProfile();
+    }
+
+  </script>
 </body>
 </html>
